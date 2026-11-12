@@ -1,0 +1,110 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: Quality (${{ matrix.package }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        package: [ready-python, ready-python-docker-webapi]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install package + dev deps
+        working-directory: packages/${{ matrix.package }}
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+
+      - name: Ruff check
+        working-directory: packages/${{ matrix.package }}
+        run: ruff check .
+
+      - name: Ruff format check
+        working-directory: packages/${{ matrix.package }}
+        run: ruff format --check .
+
+      - name: Pyright
+        working-directory: packages/${{ matrix.package }}
+        run: pyright
+
+      - name: Pytest
+        working-directory: packages/${{ matrix.package }}
+        run: pytest -q
+
+  docker:
+    name: Docker build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: hadolint
+        run: |
+          docker run --rm -v "$PWD:/mnt" -w /mnt hadolint/hadolint:latest-debian \
+            hadolint --ignore DL3008 --ignore DL3013 --ignore DL3059 \
+              packages/ready-docker/core/Dockerfile \
+              packages/ready-docker/lang/python/Dockerfile \
+              packages/ready-docker/scenarios/discord/Dockerfile \
+              packages/ready-python/Dockerfile \
+              packages/ready-python-docker-webapi/Dockerfile
+
+      - name: Build ready-docker layers (core -> python -> discord)
+        run: |
+          docker build -t ready-stack/core:ci \
+            -f packages/ready-docker/core/Dockerfile packages/ready-docker
+          docker build -t ready-stack/python:ci \
+            --build-arg CORE_IMAGE=ready-stack/core:ci \
+            -f packages/ready-docker/lang/python/Dockerfile packages/ready-docker
+          docker build -t ready-stack/discord:ci \
+            --build-arg PYTHON_IMAGE=ready-stack/python:ci \
+            -f packages/ready-docker/scenarios/discord/Dockerfile packages/ready-docker
+
+      - name: Build application images
+        run: |
+          docker build -t ready-stack/ready-python:ci packages/ready-python
+          docker build -t ready-stack/webapi:ci packages/ready-python-docker-webapi
+
+      - name: Validate compose files
+        run: |
+          bash scripts/compose-config.sh
+
+  powershell:
+    name: PowerShell scripts (parse)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Parse all .ps1 files
+        shell: pwsh
+        run: |
+          $failed = $false
+          Get-ChildItem scripts/*.ps1 | ForEach-Object {
+            $tokens = $null
+            $errors = $null
+            [void][System.Management.Automation.Language.Parser]::ParseFile(
+              $_.FullName, [ref]$tokens, [ref]$errors)
+            if ($errors.Count -gt 0) {
+              $failed = $true
+              Write-Host "::error file=$($_.FullName)::PowerShell parse errors"
+              $errors | ForEach-Object { Write-Host $_.Message }
+            } else {
+              Write-Host "OK: $($_.Name)"
+            }
+          }
+          if ($failed) { exit 1 }

@@ -1,0 +1,71 @@
+# ---- Python ----
+__pycache__/
+*.py[codz]
+*$py.class
+*.so
+.Python
+build/
+dist/
+develop-eggs/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+.venv/
+venv/
+env/
+.python-version
+
+# ---- 測試 / 覆蓋率 ----
+.pytest_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.tox/
+.nox/
+.hypothesis/
+
+# ---- 型別 / lint 快取 ----
+.ruff_cache/
+.pyright/
+.mypy_cache/
+.dmypy.json
+
+# ---- 環境 / 密碼（絕對不要提交） ----
+.env
+.env.*
+!.env.example
+secrets/
+*.secret
+*.key
+*.pem
+db/password*.txt
+secrets/db_password.txt
+
+# ---- Docker / 執行時產物 ----
+*.log
+logs/
+tmp/
+.cache/
+.pip-cache/
+
+# ---- IDE / OS ----
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+desktop.ini
+*.lnk
