@@ -1,0 +1,32 @@
+# Docker build context 排除項目（Dockerfile 只需要 pyproject.toml、README.md、
+# app/、alembic/、alembic.ini、docker/entrypoint.sh）。
+.git/
+.github/
+.venv/
+venv/
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.pyright/
+.mypy_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+.env
+.env.*
+!.env.example
+tests/
+docs/
+.devcontainer/
+Makefile
+compose*.yml
+.pre-commit-config.yaml
+pyrightconfig.json
+*.log
+tmp/
+.DS_Store
+Thumbs.db

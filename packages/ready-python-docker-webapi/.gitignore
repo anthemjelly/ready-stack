@@ -1,0 +1,17 @@
+# 本地開發／測試用（root repo 的 .gitignore 已覆蓋，這裡方便單獨複製套件）。
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.pyright/
+.mypy_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+.env
+.env.*
+!.env.example

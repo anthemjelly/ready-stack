@@ -1,0 +1,90 @@
+# Docker Compose：FastAPI 服務 + PostgreSQL 18。
+# 用法：cp .env.example .env && docker compose up -d --build
+name: ready-stack-webapi
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ready-stack/webapi:dev
+    env_file:
+      - .env
+    environment:
+      # 容器內用 service 名稱連 DB（會覆寫 .env 內給本機開發用的值）。
+      POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
+    ports:
+      - "${API_PORT:-8000}:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=3)"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+        reservations:
+          cpus: "0.25"
+          memory: 128M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - net-webapi
+
+  db:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-webapi}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-webapi}
+      POSTGRES_DB: ${POSTGRES_DB:-webapi}
+    # postgres:18 官方 image 的 PGDATA 位於 /var/lib/postgresql/<major>/docker，
+    # volume 要掛在 /var/lib/postgresql（不是舊版的 .../data）。
+    volumes:
+      - db-data:/var/lib/postgresql
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-webapi} -d $${POSTGRES_DB:-webapi}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+        reservations:
+          cpus: "0.25"
+          memory: 128M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - net-webapi
+
+volumes:
+  db-data:
+    driver: local
+
+networks:
+  net-webapi:
+    driver: bridge
