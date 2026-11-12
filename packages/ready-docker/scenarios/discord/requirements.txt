@@ -1,0 +1,4 @@
+# Layer 3：Discord 場景依賴（由 lang/python 層的 /opt/venv 安裝）
+discord.py>=2.3.2,<3.0
+deep-translator>=1.11.4,<2.0
+python-dotenv>=1.0.0,<2.0

@@ -1,0 +1,93 @@
+# ready-docker 分層工具箱的 compose 示範
+#
+# 為什麼 compose 冇 build: 區段？
+#   因為 python / discord 層的 FROM 依賴「上一層映像」，而 compose 唔會排 build 次序。
+#   一律先用 Makefile 或 scripts/build-all.sh 依 core → python → discord 建置，compose 只負責跑。
+#
+# 用法：
+#   make build && docker compose up -d core python
+#   cp .env.example .env   # 填入 DISCORD_BOT_TOKEN
+#   docker compose --profile discord up -d
+name: ready-stack-ready-docker
+
+# 共用設定（compose 會忽略 x- 開頭的頂層欄位，只當 YAML anchor 用）
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: 10m
+    max-file: "3"
+
+x-idle-resources: &idle-resources
+  limits:
+    cpus: "0.50"
+    memory: 256M
+  reservations:
+    cpus: "0.25"
+    memory: 128M
+
+x-bot-resources: &bot-resources
+  limits:
+    cpus: "0.50"
+    memory: 512M
+  reservations:
+    cpus: "0.25"
+    memory: 128M
+
+x-security: &default-security
+  - no-new-privileges:true
+
+networks:
+  net-ready-docker:
+    driver: bridge
+
+services:
+  # Layer 1：core（idle 容器，用來驗證鏡像同 healthcheck）
+  core:
+    image: ready-stack/core:dev
+    working_dir: /app
+    user: "10001:10001"
+    command: ["sleep", "infinity"]
+    environment:
+      TZ: ${TZ:-Asia/Hong_Kong}
+    networks:
+      - net-ready-docker
+    restart: unless-stopped
+    security_opt: *default-security
+    deploy:
+      resources: *idle-resources
+    logging: *default-logging
+
+  # Layer 2：python（idle 容器，可 exec 入去試 package）
+  python:
+    image: ready-stack/python:dev
+    working_dir: /app
+    user: "10001:10001"
+    command: ["sleep", "infinity"]
+    environment:
+      TZ: ${TZ:-Asia/Hong_Kong}
+    networks:
+      - net-ready-docker
+    restart: unless-stopped
+    security_opt: *default-security
+    deploy:
+      resources: *idle-resources
+    logging: *default-logging
+
+  # Layer 3：discord 場景。預設唔啟動，要 --profile discord 或 docker compose up discord。
+  # restart 用 on-failure:5（唔係 unless-stopped）：缺 token 時 app 會 exit 0，
+  # 咁樣容器會保持停止，唔會無限 crash loop；真崩潰（非 0）就重試最多 5 次。
+  discord:
+    image: ready-stack/discord:dev
+    profiles: ["discord"]
+    working_dir: /app
+    user: "10001:10001"
+    environment:
+      DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN:-}
+      TZ: ${TZ:-Asia/Hong_Kong}
+    networks:
+      - net-ready-docker
+    restart: "on-failure:5"
+    security_opt: *default-security
+    deploy:
+      resources: *bot-resources
+    logging: *default-logging

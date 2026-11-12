@@ -1,0 +1,5 @@
+# Layer 2：Python 語言層共用依賴
+# 只放「所有 Python 場景都會用到」的東西；場景自己的依賴放 scenarios/<場景>/requirements.txt。
+pip>=24.0
+setuptools>=70.0.0
+wheel>=0.43.0

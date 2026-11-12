@@ -1,0 +1,22 @@
+# ready-docker 的 build context 係 packages/ready-docker。
+# 只排除本機產物、快取與敏感檔；Dockerfile 本身唔可以排除（-f 指定的檔案仍要喺 context 入面）。
+.git
+.gitignore
+.gitattributes
+.env
+.env.*
+!.env.example
+**/__pycache__/
+**/*.py[codz]
+**/*.so
+.venv/
+venv/
+**/.pytest_cache/
+**/.ruff_cache/
+**/*.log
+logs/
+tmp/
+.cache/
+.pip-cache/
+**/.DS_Store
+**/Thumbs.db
