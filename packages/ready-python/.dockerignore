@@ -1,0 +1,34 @@
+# ---- Git / IDE ----
+.git
+.gitignore
+.gitattributes
+.vscode
+.idea
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+
+# ---- 開發環境同工具（唔需要入 image） ----
+.devcontainer/
+Makefile
+.pre-commit-config.yaml
+tests/
+
+# ---- Docker 自身 ----
+Dockerfile
+.dockerignore
+
+# ---- 雜項 ----
+*.log
